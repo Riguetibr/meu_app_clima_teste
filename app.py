@@ -7,7 +7,7 @@ BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 st.set_page_config(page_title="Clima Pro", layout="wide")
 
-# --- SUA BIBLIOTECA DE LINKS (EXATAMENTE COMO VOCÊ MANDOU) ---
+# --- SUA BIBLIOTECA DE LINKS (UNSPLASH) ---
 FOTOS_CLIMA = {
     "Clear": "https://plus.unsplash.com/premium_photo-1733306531071-087c077e1502?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", 
     "Clouds": "https://images.unsplash.com/photo-1531147637440-2fb367004900?q=80&w=1920", 
@@ -20,8 +20,7 @@ FOTOS_CLIMA = {
 }
 
 def aplicar_estilo(url_foto):
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <style>
         .stApp {{
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("{url_foto}");
@@ -42,7 +41,6 @@ def aplicar_estilo(url_foto):
             margin-top: 5vh;
         }}
         h1, h2, p {{ color: white !important; font-family: 'sans-serif'; }}
-        
         .metric-container {{
             display: flex;
             justify-content: space-around;
@@ -51,19 +49,18 @@ def aplicar_estilo(url_foto):
             padding: 15px;
             border-radius: 20px;
         }}
-        .metric-item {{ flex: 1; }}
+        .metric-item {{ flex: 1; text-align: center; }}
         </style>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align: center;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
-cidade = st.text_input("", placeholder="Digite a cidade...")
+st.markdown("<h1 style='text-align: center; color: white;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
+cidade = st.text_input("", placeholder="Digite a cidade...", label_visibility="collapsed")
 
 if cidade:
     params = {"q": cidade, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
     try:
-        res = requests.get(BASE_URL, params=params).json()
+        response = requests.get(BASE_URL, params=params)
+        res = response.json()
         if res.get("cod") == 200:
             clima = res['weather'][0]['main']
             temp = res['main']['temp']
@@ -73,25 +70,23 @@ if cidade:
             
             aplicar_estilo(FOTOS_CLIMA.get(clima, FOTOS_CLIMA["Default"]))
             
-            # Emojis e Dicas
-            emojis = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Thunderstorm": "⛈️", "Snow": "❄️"}
-            icon = emojis.get(clima, "🌍")
+            icones = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Thunderstorm": "⛈️", "Snow": "❄️"}
+            icon = icones.get(clima, "🌍")
             dica = "Hidrate-se 💧" if temp > 25 else "Agasalhe-se 🧥" if temp < 15 else "Clima agradável 😎"
 
-            # RENDERIZAÇÃO DO CARD (Corrigida para não aparecer texto puro)
-            html_card = f"""
+            # O segredo é manter o HTML em uma linha única ou bem formatado sem disparar o "code block" do Streamlit
+            card_html = f"""
             <div class="caixa-central">
-                <p style="font-size: 20px; opacity: 0.8; margin-bottom: 0;">{res['name']}</p>
-                <h1 style="font-size: 90px; margin: 0; line-height: 1;">{int(temp)}°C</h1>
-                <h2 style="margin-top: 10px;">{icon} {desc.title()}</h2>
-                
+                <p style="font-size: 20px; opacity: 0.8; margin: 0;">{res['name']}</p>
+                <h1 style="font-size: 80px; margin: 0;">{int(temp)}°C</h1>
+                <h2 style="margin: 10px 0 20px 0;">{icon} {desc.title()}</h2>
                 <div class="metric-container">
                     <div class="metric-item">
-                        <p style="margin:0; font-size: 14px; opacity: 0.8;">☁️ Chuva</p>
+                        <p style="margin:0; font-size: 14px; opacity: 0.8;">☁️ Nuvens</p>
                         <p style="margin:0; font-size: 20px; font-weight: bold;">{nuvens}%</p>
                     </div>
                     <div class="metric-item" style="border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2);">
-                        <p style="margin:0; font-size: 14px; opacity: 0.8;">💧 Umidade</p>
+                        <p style="margin:0; font-size: 14px; opacity: 0.8;">💧 Umid.</p>
                         <p style="margin:0; font-size: 20px; font-weight: bold;">{humidade}%</p>
                     </div>
                     <div class="metric-item">
@@ -101,7 +96,7 @@ if cidade:
                 </div>
             </div>
             """
-            st.markdown(html_card, unsafe_allow_html=True)
+            st.markdown(card_html, unsafe_allow_html=True)
         else:
             st.error("Cidade não encontrada.")
     except:
