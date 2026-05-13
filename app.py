@@ -1,11 +1,20 @@
 import streamlit as st
 import requests
+import random
 
 # --- CONFIGURAÇÃO DA API ---
 API_KEY = "d02f718aeb19fadc0a02515451c9e180"
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 st.set_page_config(page_title="Clima Pro", layout="wide")
+
+# --- BANCO DE CAPITAIS + RJ E SP ---
+CAPITAIS_SUGESTOES = [
+    "Brasília", "São Paulo", "Rio de Janeiro", "Londres", "Paris", 
+    "Tóquio", "Nova York", "Lisboa", "Roma", "Berlim", 
+    "Madrid", "Buenos Aires", "Montevidéu", "Cairo", "Pequim", 
+    "Moscou", "Atenas", "Washington", "Ottawa", "Sidney"
+]
 
 # --- BIBLIOTECA DE LINKS ---
 FOTOS_CLIMA = {
@@ -45,7 +54,7 @@ def aplicar_estilo(url_foto):
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
-            transition: 0.3s;
+            height: 100%;
         }}
         h1, h2, h3, p {{ color: white !important; font-family: 'sans-serif'; }}
         .metric-container {{
@@ -56,6 +65,14 @@ def aplicar_estilo(url_foto):
             padding: 15px;
             border-radius: 15px;
         }}
+        /* Estilo para o botão de voltar */
+        .stButton>button {{
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 10px !important;
+            backdrop-filter: blur(10px);
+        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -64,7 +81,6 @@ def card_mini_clima(cidade_nome):
     try:
         r = requests.get(BASE_URL, params=params).json()
         temp = int(r['main']['temp'])
-        desc = r['weather'][0]['description']
         clima_tipo = r['weather'][0]['main']
         icons = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Thunderstorm": "⛈️", "Snow": "❄️"}
         icon = icons.get(clima_tipo, "🌍")
@@ -73,24 +89,31 @@ def card_mini_clima(cidade_nome):
             <div class="card-sugestao">
                 <p style="margin:0; font-size: 14px; opacity: 0.7;">{cidade_nome.upper()}</p>
                 <h2 style="margin: 10px 0;">{icon} {temp}°C</h2>
-                <p style="margin:0; font-size: 13px; text-transform: capitalize;">{desc}</p>
+                <p style="margin:0; font-size: 13px;">{r['weather'][0]['description'].title()}</p>
             </div>
         """, unsafe_allow_html=True)
     except:
         pass
 
-# --- INTERFACE ---
-st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
+# --- LOGICA DE NAVEGAÇÃO ---
+# Inicializa o estado da pesquisa se não existir
+if 'pesquisou' not in st.session_state:
+    st.session_state.pesquisou = False
 
+st.markdown("<h1 style='text-align: center; margin-bottom: 20px;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
+
+# Barra de pesquisa
 c_input1, c_input2, c_input3 = st.columns([1, 2, 1])
 with c_input2:
-    cidade = st.text_input("", placeholder="🔍 Digite a cidade e pressione Enter...", label_visibility="collapsed")
+    cidade_input = st.text_input("", placeholder="🔍 Digite a cidade...", label_visibility="collapsed")
+    if cidade_input:
+        st.session_state.pesquisou = True
 
-if cidade:
-    params = {"q": cidade, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
+# Se o usuário pesquisou algo
+if st.session_state.pesquisou and cidade_input:
+    params = {"q": cidade_input, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
     try:
-        response = requests.get(BASE_URL, params=params)
-        res = response.json()
+        res = requests.get(BASE_URL, params=params).json()
         if res.get("cod") == 200:
             clima = res['weather'][0]['main']
             temp = res['main']['temp']
@@ -125,28 +148,40 @@ if cidade:
                     </div>
                 </div>
             """, unsafe_allow_html=True)
+            
+            # Botão de Voltar
+            st.write("")
+            col_voltar1, col_voltar2, col_voltar3 = st.columns([1, 0.5, 1])
+            with col_voltar2:
+                if st.button("⬅️ Voltar"):
+                    st.session_state.pesquisou = False
+                    st.rerun()
         else:
             st.error("Cidade não encontrada.")
+            if st.button("Tentar novamente"):
+                st.session_state.pesquisou = False
+                st.rerun()
     except:
         st.error("Erro na conexão.")
+
+# Tela Inicial
 else:
-    # --- LAYOUT INICIAL PROFISSIONAL ---
     aplicar_estilo(FOTOS_CLIMA["Default"])
-    
-    # Mensagem de Boas-vindas
     st.markdown("""
         <div class="caixa-central" style="margin-bottom: 50px;">
             <h2 style="font-size: 30px;">Seja Bem-vindo! 👋</h2>
-            <p style="opacity: 0.9;">Comece digitando o nome de uma cidade acima para ver o clima e previsões detalhadas.</p>
+            <p style="opacity: 0.9;">Descubra o clima em qualquer lugar do mundo agora mesmo.</p>
         </div>
     """, unsafe_allow_html=True)
     
-    # Cards de Sugestão
-    st.markdown("<h3 style='text-align: center; margin-bottom: 20px; font-size: 18px;'>Cidades Populares Agora</h3>", unsafe_allow_html=True)
+    # Sorteia 3 cidades aleatórias do banco de 20
+    cidades_sorteadas = random.sample(CAPITAIS_SUGESTOES, 3)
+    
+    st.markdown("<h3 style='text-align: center; margin-bottom: 20px; font-size: 18px;'>Destaques do Momento 🌍</h3>", unsafe_allow_html=True)
     col_s1, col_s2, col_s3 = st.columns(3)
     with col_s1:
-        card_mini_clima("São Paulo")
+        card_mini_clima(cidades_sorteadas[0])
     with col_s2:
-        card_mini_clima("Rio de Janeiro")
+        card_mini_clima(cidades_sorteadas[1])
     with col_s3:
-        card_mini_clima("Nova York")
+        card_mini_clima(cidades_sorteadas[2])
