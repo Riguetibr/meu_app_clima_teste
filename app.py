@@ -1,21 +1,27 @@
 import streamlit as st
+import requests
 
-# Configuração da página
-st.set_page_config(page_title="Clima Premium", layout="wide")
+# --- CONFIGURAÇÃO DA API ---
+API_KEY = "d02f718aeb19fadc0a02515451c9e180"
+BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
-# Banco de dados
-dados = {
-    "Londres": {"temp": 13, "condicao": "Céu limpo com períodos nublados", "foto": "https://cdn.sanity.io/images/mkg24y51/production/8a0c8000dcef4d42162c21c8aa11984dc98617e3-1000x656.webp/big-ben-londres.webp"},
-    "Rio de Janeiro": {"temp": 22, "condicao": "Ensolarado", "foto": "https://www.melhoresdestinos.com.br/wp-content/uploads/2019/08/rio-de-janeiro-capa2019-01.jpg"},
-    "Roma": {"temp": 18, "condicao": "Céu limpo com períodos nublados", "foto": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1XQguMVngykQm5AMwJmo9w2AN6tle93MUGA&s"},
-    "Dubai": {"temp": 29, "condicao": "Céu limpo", "foto": "https://www.civitatis.com/blog/wp-content/uploads/2025/06/shutterstock_1711382014.jpg"},
-    "Paris": {"temp": 13, "condicao": "Predominantemente nublado", "foto": "https://www.grayline.com/wp-content/uploads/2025/01/shutterstock_667548661-scaled.jpg"},
-    "Pequim": {"temp": 20, "condicao": "Céu limpo com períodos nublados", "foto": "https://www.iroamly.com/images/beijing-china-cover.webp"},
-    "Buenos Aires": {"temp": 19, "condicao": "Nublado", "foto": "https://aguiarbuenosaires.com/wp-content/uploads/2022/03/OBELISCO-ADRIANA.jpeg"},
-    "Washington": {"temp": 21, "condicao": "Predominantemente ensolarado", "foto": "https://estadosunidosbrasil.com.br/wp-content/uploads/sites/6/2022/08/6791202359_9704749dbb_z1.jpg"}
-}
+# --- CONFIGURAÇÃO DA PÁGINA ---
+st.set_page_config(page_title="Clima Premium Global", layout="wide")
 
-# CSS (Fundo e Estética)
+# Função para buscar dados da API
+def buscar_clima(cidade):
+    params = {
+        "q": cidade,
+        "appid": API_KEY,
+        "units": "metric",
+        "lang": "pt_br"
+    }
+    response = requests.get(BASE_URL, params=params)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+# Função de Estilo (Mantendo sua estética original)
 def aplicar_estilo(url_foto):
     st.markdown(
         f"""
@@ -33,7 +39,7 @@ def aplicar_estilo(url_foto):
             text-align: center;
             max-width: 500px;
             margin: auto;
-            margin-top: 12vh;
+            margin-top: 10vh;
             border: 1px solid #ddd;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }}
@@ -42,44 +48,64 @@ def aplicar_estilo(url_foto):
         unsafe_allow_html=True
     )
 
+# --- INTERFACE ---
 st.markdown("<h1 style='text-align: center; color: white; text-shadow: 2px 2px 4px #000;'>🌍 Monitor de Clima Global</h1>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    cidade = st.selectbox("Escolha o destino:", ["Selecione..."] + list(dados.keys()))
+    # Mudamos para text_input para você digitar QUALQUER cidade
+    cidade_digitada = st.text_input("Digite o nome da cidade (ex: Londres, Tokyo, São Paulo):", "")
 
-if cidade != "Selecione...":
-    info = dados[cidade]
-    temp = info['temp']
-    cond = info['condicao']
-    aplicar_estilo(info['foto'])
+if cidade_digitada:
+    dados = buscar_clima(cidade_digitada)
     
-    dicas = []
-    if temp < 20: dicas.append("Vale a pena se agasalhar!")
-    if temp >= 30 and ("ensolarado" in cond.lower() or "limpo" in cond.lower()):
-        dicas.append("Recomendamos usar protetor solar!")
-    
-    dica_texto = f"* {' | '.join(dicas)}" if dicas else ""
+    if dados:
+        nome_cidade = dados['name']
+        temp = dados['main']['temp']
+        condicao = dados['weather'][0]['description']
+        clima_geral = dados['weather'][0]['main'] # Ex: Clear, Clouds, Rain
+        
+        # Lógica para mudar o fundo baseada no tipo de clima
+        if clima_geral == "Clear":
+            foto = "https://images.unsplash.com/photo-1506466010722-395aa2bef877?w=1200"
+        elif clima_geral == "Clouds":
+            foto = "https://images.unsplash.com/photo-1483702721041-b23de737a886?w=1200"
+        elif clima_geral == "Rain":
+            foto = "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=1200"
+        else:
+            foto = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200"
+            
+        aplicar_estilo(foto)
 
-    st.markdown(
-        f"""
-        <div class="caixa-central">
-            <h2 style="color: #444; margin: 0;">{cidade}</h2>
-            <h1 style="font-size: 100px; color: #222; margin: 0;">{temp}°C</h1>
-            <p style="color: #666; font-size: 20px;">{cond}</p>
-            <p style="color: #d32f2f; font-size: 15px; font-weight: bold;">{dica_texto}</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        # Dicas inteligentes baseadas na temperatura real
+        dicas = []
+        if temp < 15: dicas.append("Melhor levar um casaco pesado! 🧥")
+        elif temp < 22: dicas.append("Um agasalho leve resolve. 🧣")
+        if temp > 28: dicas.append("Beba muita água e use protetor! 🧴")
+        
+        dica_texto = " | ".join(dicas)
+
+        st.markdown(
+            f"""
+            <div class="caixa-central">
+                <h2 style="color: #444; margin: 0;">{nome_cidade}</h2>
+                <h1 style="font-size: 100px; color: #222; margin: 0;">{int(temp)}°C</h1>
+                <p style="color: #666; font-size: 20px; text-transform: capitalize;">{condicao}</p>
+                <p style="color: #d32f2f; font-size: 15px; font-weight: bold;">{dica_texto}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.error("Cidade não encontrada! Tente digitar o nome corretamente.")
 else:
-    # AQUI ESTÁ A MUDANÇA DA PÁGINA INICIAL
+    # Tela inicial antes de digitar
     aplicar_estilo("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200")
     st.markdown(
         """
         <div class="caixa-central">
-            <h2 style="color: #333; margin-bottom: 10px;">Selecione uma cidade para ver o clima</h2>
-            <p style="color: #777;">Utilize o menu acima para explorar as temperaturas mundiais.</p>
+            <h2 style="color: #333;">Aguardando sua busca...</h2>
+            <p style="color: #777;">Digite o nome de uma cidade acima para ver o clima em tempo real.</p>
         </div>
         """,
         unsafe_allow_html=True
