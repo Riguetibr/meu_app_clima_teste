@@ -13,7 +13,7 @@ FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 st.set_page_config(page_title="Clima Pro", layout="wide")
 
-# --- BANCO DE CIDADES ---
+# --- BANCO DE DADOS E DICIONÁRIOS ---
 CAPITAIS_SUGESTOES = [
     "Brasília", "São Paulo", "Rio de Janeiro", "Londres", "Paris", 
     "Tóquio", "Nova York", "Lisboa", "Roma", "Berlim", 
@@ -35,6 +35,14 @@ FOTOS_CLIMA = {
     "Default": "https://images.unsplash.com/photo-1778483154534-8290a142eb2d?q=80&w=1170&auto=format&fit=crop"
 }
 
+# --- FUNÇÕES AUXILIARES ---
+def obter_emoji_clima(main_clima):
+    mapeamento = {
+        "Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Drizzle": "🌦️", 
+        "Thunderstorm": "⛈️", "Snow": "❄️", "Mist": "🌫️", "Fog": "🌫️"
+    }
+    return mapeamento.get(main_clima, "🌡️")
+
 def aplicar_estilo(url_foto):
     st.markdown(f"""
         <style>
@@ -48,17 +56,8 @@ def aplicar_estilo(url_foto):
             padding: 35px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center; margin: auto;
         }}
-        /* Centralização forçada para o iframe do mapa */
-        iframe {{
-            border-radius: 20px;
-            display: block;
-            margin: 0 auto;
-        }}
-        .card-previsao {{
-            background: rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1); text-align: center;
-        }}
-        h1, h2, h3, p {{ color: white !important; font-family: 'sans-serif'; }}
+        iframe {{ border-radius: 20px; display: block; margin: 0 auto; }}
+        h1, h2, h3, h4, p {{ color: white !important; font-family: 'sans-serif'; }}
         .font-hora {{ font-family: 'JetBrains Mono', monospace; font-size: 28px; }}
         .font-data {{ font-family: 'Roboto', sans-serif; font-weight: 300; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; }}
         
@@ -85,10 +84,10 @@ if 'cidade_ativa' not in st.session_state: st.session_state.cidade_ativa = None
 
 st.markdown("<h1 style='text-align: center; margin-bottom: 20px;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
 
-# Layout Superior de Busca e Menu
+# Layout Superior
 col_menu1, col_menu2, col_menu3 = st.columns([1, 2, 1])
 with col_menu2:
-    aba_selecionada = st.radio("Escolha a visualização:", ["Dados do Clima", "Mapa de Radar"], horizontal=True, label_visibility="collapsed")
+    aba_selecionada = st.radio("Escolha:", ["Dados do Clima", "Mapa de Radar"], horizontal=True, label_visibility="collapsed")
     busca = st.text_input("", placeholder="🔍 Digite a cidade...", label_visibility="collapsed", key=f"input_{st.session_state.cidade_ativa}")
     if busca: st.session_state.cidade_ativa = busca
 
@@ -105,7 +104,7 @@ if st.session_state.cidade_ativa:
             aplicar_estilo(FOTOS_CLIMA.get(clima, FOTOS_CLIMA["Default"]))
 
             if aba_selecionada == "Dados do Clima":
-                # --- TELA DE DADOS ---
+                # --- TELA DE DADOS INTEGRADA ---
                 st.markdown(f"""
                     <div class="caixa-central" style="max-width: 750px;">
                         <p style="font-size: 18px; opacity: 0.7; margin-bottom: 10px;">{res['name']}, {res['sys']['country']}</p>
@@ -118,41 +117,50 @@ if st.session_state.cidade_ativa:
                             </div>
                         </div>
                         <h2 style="margin: 20px 0;">{res['weather'][0]['description'].title()}</h2>
-                        <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 15px; margin-bottom: 30px;">
+                        
+                        <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 15px; margin-bottom: 35px;">
                             <div><p style="font-size:12px; opacity:0.7; margin:0;">☁️ Nuvens</p><p style="font-size:20px; font-weight:bold; margin:0;">{res['clouds']['all']}%</p></div>
                             <div style="border-left:1px solid rgba(255,255,255,0.2); border-right:1px solid rgba(255,255,255,0.2); padding: 0 20px;"><p style="font-size:12px; opacity:0.7; margin:0;">💧 Umidade</p><p style="font-size:20px; font-weight:bold; margin:0;">{res['main']['humidity']}%</p></div>
                             <div><p style="font-size:12px; opacity:0.7; margin:0;">🌬️ Vento</p><p style="font-size:20px; font-weight:bold; margin:0;">{int(res['wind']['speed']*3.6)}km/h</p></div>
                         </div>
-                        <h4 style="text-align: left; margin-bottom: 15px; opacity: 0.8;">Previsão para os próximos dias</h4>
+
+                        <h4 style="text-align: center; margin-bottom: 25px; color: white; font-weight: 300; letter-spacing: 1px; text-transform: uppercase;">Previsão para os próximos dias</h4>
                 """, unsafe_allow_html=True)
 
+                # Colunas de Previsão dentro do Card
                 f_res = requests.get(FORECAST_URL, params={"q": st.session_state.cidade_ativa, "appid": API_KEY, "units": "metric", "lang": "pt_br"}).json()
                 c1, c2, c3 = st.columns(3)
+                
                 for i, idx in enumerate([8, 16, 24]):
                     f_item = f_res['list'][idx]
                     f_data = (hora_local + timedelta(days=i+1)).strftime("%d/%m")
+                    emoji = obter_emoji_clima(f_item['weather'][0]['main'])
+                    # Linha fina lateral exceto no último card
+                    estilo_borda = "border-right: 1px solid rgba(255,255,255,0.15);" if i < 2 else ""
+                    
                     with [c1, c2, c3][i]:
-                        st.markdown(f"""<div class="card-previsao">
-                            <p style="margin:0; font-size:13px; font-weight:bold; opacity:0.7;">{f_data}</p>
-                            <h3 style="margin:10px 0;">{int(f_item['main']['temp'])}°C</h3>
-                            <p style="margin:0; font-size:11px;">{f_item['weather'][0]['description'].title()}</p>
-                        </div>""", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown(f"""
+                            <div style="{estilo_borda} padding: 10px;">
+                                <p style="margin:0; font-size:14px; opacity:0.8;">{f_data}</p>
+                                <div style="font-size: 35px; margin: 10px 0;">{emoji}</div>
+                                <h3 style="margin:0; font-size: 26px;">{int(f_item['main']['temp'])}°C</h3>
+                                <p style="margin:5px 0 0 0; font-size:12px; opacity:0.6;">{f_item['weather'][0]['description'].title()}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+                
+                st.markdown("</div>", unsafe_allow_html=True) # Fecha caixa-central
 
             else:
-                # --- TELA DE MAPA EXCLUSIVO CENTRALIZADO ---
+                # --- TELA DE MAPA ---
                 col_mapa_1, col_mapa_2, col_mapa_3 = st.columns([0.1, 5, 0.1])
-                
                 with col_mapa_2:
                     st.markdown('<div class="caixa-central" style="max-width: 950px;">', unsafe_allow_html=True)
                     lat, lon = res['coord']['lat'], res['coord']['lon']
                     m = folium.Map(location=[lat, lon], zoom_start=10, tiles="cartodbpositron")
-
                     folium.raster_layers.TileLayer(
                         tiles=f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}",
                         attr="OpenWeather", name="Nuvens", overlay=True
                     ).add_to(m)
-
                     folium_static(m, width=880, height=600)
                     st.markdown('</div>', unsafe_allow_html=True)
 
