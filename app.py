@@ -7,10 +7,10 @@ BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 st.set_page_config(page_title="Clima Pro", layout="wide")
 
-# --- SUA BIBLIOTECA DE LINKS (UNSPLASH) ---
+# --- SUA BIBLIOTECA DE LINKS (CORRIGIDA) ---
 FOTOS_CLIMA = {
     "Clear": "https://plus.unsplash.com/premium_photo-1733306531071-087c077e1502?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", 
-    "Clouds": "https://unsplash.com/pt-br/fotografias/foto-de-nuvens-brancas-V4qjYCac7y8", 
+    "Clouds": "https://images.unsplash.com/photo-1534088568595-a066f410bcda?q=80&w=1920", # LINK CORRIGIDO PARA IMAGEM DIRETA
     "Rain": "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=1920", 
     "Thunderstorm": "https://images.unsplash.com/photo-1559087867-ce4c91325525?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", 
     "Snow": "https://images.unsplash.com/photo-1477601263568-180e2c6d046e?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", 
@@ -74,7 +74,6 @@ if cidade:
             icon = icones.get(clima, "🌍")
             dica = "Hidrate-se 💧" if temp > 25 else "Agasalhe-se 🧥" if temp < 15 else "Clima agradável 😎"
 
-            # O segredo é manter o HTML em uma linha única ou bem formatado sem disparar o "code block" do Streamlit
             card_html = f"""
             <div class="caixa-central">
                 <p style="font-size: 20px; opacity: 0.8; margin: 0;">{res['name']}</p>
