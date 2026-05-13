@@ -137,16 +137,26 @@ if st.session_state.cidade_ativa:
 
             else:
                 # --- TELA DE MAPA EXCLUSIVO ---
-                st.markdown('<div class="caixa-central">', unsafe_allow_html=True)
-                lat, lon = res['coord']['lat'], res['coord']['lon']
-                m = folium.Map(location=[lat, lon], zoom_start=10, tiles="cartodbpositron")
-                # Camada de Nuvens
-                folium.raster_layers.TileLayer(
-                    tiles=f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}",
-                    attr="OpenWeather", name="Nuvens", overlay=True
-                ).add_to(m)
-                folium_static(m, width=680, height=450)
-                st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div class="caixa-central">', unsafe_allow_html=True)
+
+lat, lon = res['coord']['lat'], res['coord']['lon']
+m = folium.Map(location=[lat, lon], zoom_start=20, tiles="cartodbpositron")
+
+# Camada de Nuvens
+folium.raster_layers.TileLayer(
+    tiles=f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}",
+    attr="OpenWeather", name="Nuvens", overlay=True
+).add_to(m)
+
+# --- CENTRALIZAÇÃO AQUI ---
+# Criamos 3 colunas. A do meio (2) terá a largura do mapa.
+# Você pode ajustar os pesos [1, 5, 1] para mudar o tamanho relativo.
+col1, col2, col3 = st.columns([1, 6, 1])
+
+with col2:
+    folium_static(m, width=880, height=650)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
             # Botão Voltar
             st.write("")
