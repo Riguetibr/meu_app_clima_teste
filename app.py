@@ -1,4 +1,4 @@
-ort streamlit as st
+import streamlit as st
 import requests
 
 # --- CONFIGURAÇÃO DA API ---
