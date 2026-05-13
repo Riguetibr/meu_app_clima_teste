@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 
 # --- CONFIGURAÇÃO DA API ---
 API_KEY = "d02f718aeb19fadc0a02515451c9e180"
@@ -32,6 +33,8 @@ FOTOS_CLIMA = {
 def aplicar_estilo(url_foto):
     st.markdown(f"""
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Roboto:wght@100;300&display=swap');
+        
         .stApp {{
             background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("{url_foto}");
             background-size: cover;
@@ -39,10 +42,10 @@ def aplicar_estilo(url_foto):
             background-attachment: fixed;
         }}
         .caixa-central {{
-            background: rgba(255, 255, 255, 0.1); 
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.12); 
+            backdrop-filter: blur(25px);
             padding: 35px;
-            border-radius: 25px;
+            border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center;
             max-width: 600px;
@@ -56,7 +59,11 @@ def aplicar_estilo(url_foto):
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }}
-        h1, h2, h3, p {{ color: white !important; font-family: 'sans-serif'; }}
+        h1, h2, h3, p {{ color: white !important; }}
+        
+        .font-hora {{ font-family: 'JetBrains Mono', monospace; font-size: 28px; }}
+        .font-data {{ font-family: 'Roboto', sans-serif; font-weight: 300; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; }}
+
         .metric-container {{
             display: flex;
             justify-content: space-around;
@@ -65,10 +72,21 @@ def aplicar_estilo(url_foto):
             padding: 15px;
             border-radius: 15px;
         }}
-        .voltar-btn-container {{
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
+        
+        /* BOTÃO DE VOLTAR CORRIGIDO */
+        div.stButton > button {{
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            color: white !important;
+            border: 2px solid rgba(255, 255, 255, 0.5) !important;
+            border-radius: 12px !important;
+            padding: 10px 25px !important;
+            font-weight: bold !important;
+            transition: all 0.3s ease !important;
+        }}
+        div.stButton > button:hover {{
+            background-color: rgba(255, 255, 255, 0.3) !important;
+            border-color: white !important;
+            transform: scale(1.05);
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -83,9 +101,9 @@ def card_mini_clima(cidade_nome):
         icon = icons.get(clima_tipo, "🌍")
         st.markdown(f"""
             <div class="card-sugestao">
-                <p style="margin:0; font-size: 14px; opacity: 0.7;">{cidade_nome.upper()}</p>
-                <h2 style="margin: 10px 0;">{icon} {temp}°C</h2>
-                <p style="margin:0; font-size: 13px;">{r['weather'][0]['description'].title()}</p>
+                <p style="margin:0; font-size: 12px; opacity: 0.6;">{cidade_nome.upper()}</p>
+                <h2 style="margin: 8px 0;">{icon} {temp}°C</h2>
+                <p style="margin:0; font-size: 13px; opacity: 0.9;">{r['weather'][0]['description'].title()}</p>
             </div>
         """, unsafe_allow_html=True)
     except:
@@ -95,16 +113,15 @@ def card_mini_clima(cidade_nome):
 if 'cidade_ativa' not in st.session_state:
     st.session_state.cidade_ativa = None
 
-st.markdown("<h1 style='text-align: center; margin-bottom: 20px;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; margin-bottom: 20px; font-family: sans-serif;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
 
-# Barra de busca (Sempre visível ou limpa ao voltar)
 c_in1, c_in2, c_in3 = st.columns([1, 2, 1])
 with c_in2:
-    busca = st.text_input("", placeholder="🔍 Digite a cidade...", label_visibility="collapsed", key="search_input")
+    # Usamos uma chave dinâmica para limpar o input ao voltar
+    busca = st.text_input("", placeholder="🔍 Onde você está agora?", label_visibility="collapsed", key=f"input_{st.session_state.cidade_ativa}")
     if busca:
         st.session_state.cidade_ativa = busca
 
-# --- LÓGICA DE EXIBIÇÃO ---
 if st.session_state.cidade_ativa:
     params = {"q": st.session_state.cidade_ativa, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
     try:
@@ -112,50 +129,49 @@ if st.session_state.cidade_ativa:
         if res.get("cod") == 200:
             clima = res['weather'][0]['main']
             temp = int(res['main']['temp'])
-            desc = res['weather'][0]['description']
-            humidade = res['main']['humidity']
-            nuvens = res['clouds']['all']
             
-            # Data e Hora Atual
-            agora = datetime.now()
-            data_formatada = agora.strftime("%d/%m/%Y")
-            hora_formatada = agora.strftime("%H:%M")
+            # CÁLCULO DA HORA LOCAL DA CIDADE
+            # O OpenWeather retorna 'timezone' em segundos de deslocamento do UTC
+            fuso_horario = res.get('timezone') 
+            hora_utc = datetime.now(pytz.utc)
+            hora_local_cidade = hora_utc + timedelta(seconds=fuso_horario)
+            
+            data_str = hora_local_cidade.strftime("%d %b %Y")
+            hora_str = hora_local_cidade.strftime("%H:%M")
             
             aplicar_estilo(FOTOS_CLIMA.get(clima, FOTOS_CLIMA["Default"]))
             icones = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Thunderstorm": "⛈️", "Snow": "❄️"}
             icon = icones.get(clima, "🌍")
-            dica = "Hidrate-se 💧" if temp > 25 else "Agasalhe-se 🧥" if temp < 15 else "Clima agradável 😎"
 
             st.markdown(f"""
                 <div class="caixa-central">
-                    <p style="font-size: 18px; opacity: 0.8; margin: 0;">{res['name']}</p>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-                        <h1 style="font-size: 90px; margin: 0;">{temp}°C</h1>
-                        <div style="text-align: left; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 15px;">
-                            <p style="margin:0; font-size: 16px; font-weight: bold;">{data_formatada}</p>
-                            <p style="margin:0; font-size: 24px; letter-spacing: 1px;">{hora_formatada}</p>
+                    <p style="font-size: 18px; opacity: 0.7; margin-bottom: 10px;">{res['name']}, {res['sys']['country']}</p>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 30px;">
+                        <h1 style="font-size: 100px; margin: 0; font-family: sans-serif;">{temp}°C</h1>
+                        <div style="text-align: left; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 20px;">
+                            <p class="font-data" style="margin:0;">{data_str}</p>
+                            <p class="font-hora" style="margin:0;">{hora_str}</p>
                         </div>
                     </div>
-                    <h2 style="margin: 10px 0 20px 0;">{icon} {desc.title()}</h2>
+                    <h2 style="margin: 20px 0;">{icon} {res['weather'][0]['description'].title()}</h2>
                     <div class="metric-container">
                         <div style="flex:1;">
                             <p style="margin:0; font-size: 12px; opacity: 0.7;">☁️ Nuvens</p>
-                            <p style="margin:0; font-size: 18px; font-weight: bold;">{nuvens}%</p>
+                            <p style="margin:0; font-size: 20px; font-weight: bold;">{res['clouds']['all']}%</p>
                         </div>
                         <div style="flex:1; border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2);">
                             <p style="margin:0; font-size: 12px; opacity: 0.7;">💧 Umidade</p>
-                            <p style="margin:0; font-size: 18px; font-weight: bold;">{humidade}%</p>
+                            <p style="margin:0; font-size: 20px; font-weight: bold;">{res['main']['humidity']}%</p>
                         </div>
                         <div style="flex:1;">
                             <p style="margin:0; font-size: 12px; opacity: 0.7;">💡 Dica</p>
-                            <p style="margin:0; font-size: 15px; font-weight: bold;">{dica}</p>
+                            <p style="margin:0; font-size: 15px; font-weight: bold;">{"Hidrate-se 💧" if temp > 25 else "Agasalhe-se 🧥" if temp < 15 else "Aproveite! 😎"}</p>
                         </div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
             
-            # Botão Centralizado
-            st.write("") # Espaçador
+            st.write("")
             col_b1, col_b2, col_b3 = st.columns([1, 0.4, 1])
             with col_b2:
                 if st.button("⬅️ Voltar", use_container_width=True):
@@ -163,24 +179,22 @@ if st.session_state.cidade_ativa:
                     st.rerun()
         else:
             st.error("Cidade não encontrada.")
-            if st.button("Voltar ao Início"):
+            if st.button("Tentar outro lugar"):
                 st.session_state.cidade_ativa = None
                 st.rerun()
-    except:
-        st.error("Erro na conexão.")
+    except Exception as e:
+        st.error(f"Erro na conexão.")
 else:
-    # TELA INICIAL
     aplicar_estilo(FOTOS_CLIMA["Default"])
     st.markdown("""
         <div class="caixa-central" style="margin-bottom: 50px;">
-            <h2 style="font-size: 30px;">Seja Bem-vindo! 👋</h2>
-            <p style="opacity: 0.9;">Descubra o clima em qualquer lugar do mundo agora mesmo.</p>
+            <h2 style="font-size: 32px; font-family: sans-serif;">Seja Bem-vindo! 👋</h2>
+            <p style="opacity: 0.8; font-size: 18px;">Consulte o clima em tempo real em qualquer lugar do mundo.</p>
         </div>
     """, unsafe_allow_html=True)
     
-    # Sorteio Aleatório
     cidades_sorteadas = random.sample(CAPITAIS_SUGESTOES, 3)
-    st.markdown("<h3 style='text-align: center; margin-bottom: 20px; font-size: 18px;'>Destaques do Momento 🌍</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; margin-bottom: 25px; font-size: 18px; font-family: sans-serif; opacity: 0.8;'>Destaques Globais Agora 🌍</h3>", unsafe_allow_html=True)
     col_s1, col_s2, col_s3 = st.columns(3)
     with col_s1: card_mini_clima(cidades_sorteadas[0])
     with col_s2: card_mini_clima(cidades_sorteadas[1])
