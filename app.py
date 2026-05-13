@@ -6,7 +6,7 @@ API_KEY = "d02f718aeb19fadc0a02515451c9e180"
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Clima Premium", layout="wide")
+st.set_page_config(page_title="Clima", layout="wide")
 
 # Função para definir o Emoji baseado no clima
 def obter_emoji(clima_main):
@@ -48,7 +48,7 @@ def aplicar_estilo(url_foto):
         unsafe_allow_html=True
     )
 
-st.markdown("<h1 style='text-align: center; color: white; text-shadow: 2px 2px 4px #000;'>🌍 Monitor de Clima Global</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: white; text-shadow: 2px 2px 4px #000;'> Monitor de Clima Global</h1>", unsafe_allow_html=True)
 
 # Busca de cidade
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -89,7 +89,7 @@ if cidade:
                 dicas.append("☔ Não esqueça o guarda-chuva!")
 
             # Background padrão
-            aplicar_estilo("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200")
+            aplicar_estilo("https://s2.static.brasilescola.uol.com.br/be/2023/01/vista-da-atmosfera-camada-gasosa-que-envolve-a-terra.jpg")
 
             st.markdown(
                 f"""
