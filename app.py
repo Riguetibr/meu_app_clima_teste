@@ -26,7 +26,6 @@ DIAS_SEMANA = {
     "Thursday": "Quinta-feira", "Friday": "Sexta-feira", "Saturday": "Sábado", "Sunday": "Domingo"
 }
 
-# --- BIBLIOTECA DE LINKS ---
 FOTOS_CLIMA = {
     "Clear": "https://plus.unsplash.com/premium_photo-1733306531071-087c077e1502?q=80&w=1170&auto=format&fit=crop", 
     "Clouds": "https://images.unsplash.com/photo-1534088568595-a066f410bcda?q=80&w=1920", 
@@ -47,7 +46,13 @@ def aplicar_estilo(url_foto):
         .caixa-central {{
             background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(25px);
             padding: 35px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center; max-width: 750px; margin: auto;
+            text-align: center; margin: auto;
+        }}
+        /* Centralização forçada para o iframe do mapa */
+        iframe {{
+            border-radius: 20px;
+            display: block;
+            margin: 0 auto;
         }}
         .card-previsao {{
             background: rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 20px;
@@ -102,7 +107,7 @@ if st.session_state.cidade_ativa:
             if aba_selecionada == "Dados do Clima":
                 # --- TELA DE DADOS ---
                 st.markdown(f"""
-                    <div class="caixa-central">
+                    <div class="caixa-central" style="max-width: 750px;">
                         <p style="font-size: 18px; opacity: 0.7; margin-bottom: 10px;">{res['name']}, {res['sys']['country']}</p>
                         <div style="display: flex; align-items: center; justify-content: center; gap: 30px;">
                             <h1 style="font-size: 100px; margin: 0;">{int(res['main']['temp'])}°C</h1>
@@ -121,7 +126,6 @@ if st.session_state.cidade_ativa:
                         <h4 style="text-align: left; margin-bottom: 15px; opacity: 0.8;">Previsão para os próximos dias</h4>
                 """, unsafe_allow_html=True)
 
-                # Cards de 3 dias
                 f_res = requests.get(FORECAST_URL, params={"q": st.session_state.cidade_ativa, "appid": API_KEY, "units": "metric", "lang": "pt_br"}).json()
                 c1, c2, c3 = st.columns(3)
                 for i, idx in enumerate([8, 16, 24]):
@@ -136,27 +140,21 @@ if st.session_state.cidade_ativa:
                 st.markdown("</div>", unsafe_allow_html=True)
 
             else:
-                # --- TELA DE MAPA EXCLUSIVO ---
+                # --- TELA DE MAPA EXCLUSIVO CENTRALIZADO ---
+                col_mapa_1, col_mapa_2, col_mapa_3 = st.columns([0.1, 5, 0.1])
+                
+                with col_mapa_2:
+                    st.markdown('<div class="caixa-central" style="max-width: 950px;">', unsafe_allow_html=True)
+                    lat, lon = res['coord']['lat'], res['coord']['lon']
+                    m = folium.Map(location=[lat, lon], zoom_start=10, tiles="cartodbpositron")
 
-                st.markdown('<div class="caixa-central">', unsafe_allow_html=True)
+                    folium.raster_layers.TileLayer(
+                        tiles=f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}",
+                        attr="OpenWeather", name="Nuvens", overlay=True
+                    ).add_to(m)
 
-                lat, lon = res['coord']['lat'], res['coord']['lon']
-
-                m = folium.Map(location=[lat, lon], zoom_start=20, tiles="cartodbpositron")
-
-                # Camada de Nuvens
-
-                folium.raster_layers.TileLayer(
-
-                    tiles=f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}",
-
-                    attr="OpenWeather", name="Nuvens", overlay=True
-
-                ).add_to(m)
-
-                folium_static(m, width=880, height=650)
-
-                st.markdown('</div>', unsafe_allow_html=True)
+                    folium_static(m, width=880, height=600)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
             # Botão Voltar
             st.write("")
@@ -170,7 +168,7 @@ if st.session_state.cidade_ativa:
     except: st.error("Erro na conexão.")
 else:
     aplicar_estilo(FOTOS_CLIMA["Default"])
-    st.markdown('<div class="caixa-central"><h2>Olá! 👋</h2><p>Pesquise uma cidade para ver o clima e o mapa.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="caixa-central" style="max-width: 750px;"><h2>Olá! 👋</h2><p>Pesquise uma cidade para ver o clima e o mapa.</p></div>', unsafe_allow_html=True)
     cidades = random.sample(CAPITAIS_SUGESTOES, 3)
     st.write("")
     col_s1, col_s2, col_s3 = st.columns(3)
