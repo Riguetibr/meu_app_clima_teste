@@ -37,7 +37,7 @@ def aplicar_estilo(url_foto):
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center;
-            max-width: 550px;
+            max-width: 500px;
             margin: auto;
             margin-top: 5vh;
         }}
@@ -47,17 +47,18 @@ def aplicar_estilo(url_foto):
             display: flex;
             justify-content: space-around;
             margin-top: 25px;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.3);
             padding: 15px;
             border-radius: 20px;
         }}
+        .metric-item {{ flex: 1; }}
         </style>
         """,
         unsafe_allow_html=True
     )
 
 st.markdown("<h1 style='text-align: center;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
-cidade = st.text_input("", placeholder="Digite a cidade e pressione Enter...")
+cidade = st.text_input("", placeholder="Digite a cidade...")
 
 if cidade:
     params = {"q": cidade, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
@@ -68,46 +69,43 @@ if cidade:
             temp = res['main']['temp']
             desc = res['weather'][0]['description']
             humidade = res['main']['humidity']
-            # Usamos a cobertura de nuvens como indicador de chance de chuva para a versão gratuita da API
             nuvens = res['clouds']['all']
             
             aplicar_estilo(FOTOS_CLIMA.get(clima, FOTOS_CLIMA["Default"]))
             
-            # Lógica da Dica
+            # Emojis e Dicas
+            emojis = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Thunderstorm": "⛈️", "Snow": "❄️"}
+            icon = emojis.get(clima, "🌍")
             dica = "Hidrate-se 💧" if temp > 25 else "Agasalhe-se 🧥" if temp < 15 else "Clima agradável 😎"
-            
-            st.markdown(f"""
-                <div class="caixa-central">
-                    <p style="font-size: 20px; opacity: 0.8;">{res['name']}</p>
-                    <h1 style="font-size: 80px; margin: 0;">{int(temp)}°C</h1>
-                    <h2 style="text-transform: capitalize; margin-bottom: 20px;">{desc}</h2>
-                    
-                    <div class="metric-container">
-                        <div>
-                            <p style="margin:0; font-size: 13px; opacity: 0.7;">💧 Umidade</p>
-                            <p style="margin:0; font-size: 18px; font-weight: bold;">{humidade}%</p>
-                        </div>
-                        <div style="border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2); padding: 0 20px;">
-                            <p style="margin:0; font-size: 13px; opacity: 0.7;">🌧️ Chuva</p>
-                            <p style="margin:0; font-size: 18px; font-weight: bold;">{nuvens}%</p>
-                        </div>
-                        <div>
-                            <p style="margin:0; font-size: 13px; opacity: 0.7;">💡 Dica</p>
-                            <p style="margin:0; font-size: 16px; font-weight: bold;">{dica}</p>
-                        </div>
+
+            # RENDERIZAÇÃO DO CARD (Corrigida para não aparecer texto puro)
+            html_card = f"""
+            <div class="caixa-central">
+                <p style="font-size: 20px; opacity: 0.8; margin-bottom: 0;">{res['name']}</p>
+                <h1 style="font-size: 90px; margin: 0; line-height: 1;">{int(temp)}°C</h1>
+                <h2 style="margin-top: 10px;">{icon} {desc.title()}</h2>
+                
+                <div class="metric-container">
+                    <div class="metric-item">
+                        <p style="margin:0; font-size: 14px; opacity: 0.8;">☁️ Chuva</p>
+                        <p style="margin:0; font-size: 20px; font-weight: bold;">{nuvens}%</p>
+                    </div>
+                    <div class="metric-item" style="border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2);">
+                        <p style="margin:0; font-size: 14px; opacity: 0.8;">💧 Umidade</p>
+                        <p style="margin:0; font-size: 20px; font-weight: bold;">{humidade}%</p>
+                    </div>
+                    <div class="metric-item">
+                        <p style="margin:0; font-size: 14px; opacity: 0.8;">💡 Dica</p>
+                        <p style="margin:0; font-size: 16px; font-weight: bold;">{dica}</p>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
+            </div>
+            """
+            st.markdown(html_card, unsafe_allow_html=True)
         else:
             st.error("Cidade não encontrada.")
     except:
         st.error("Erro na conexão.")
 else:
-    # TELA INICIAL COM O CARD DE BOAS-VINDAS
     aplicar_estilo(FOTOS_CLIMA["Default"])
-    st.markdown("""
-        <div class="caixa-central">
-            <h2 style="font-size: 35px;">Olá! 🌍</h2>
-            <p>Coloque o nome da cidade acima para ver o clima em tempo real.</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="caixa-central"><h2>Olá! 🌍</h2><p>Digite o nome da cidade acima para ver o clima.</p></div>', unsafe_allow_html=True)
