@@ -9,14 +9,14 @@ st.set_page_config(page_title="Clima Pro", layout="wide")
 
 # --- BIBLIOTECA CURADA (Imagens HD que não quebram) ---
 FOTOS_CLIMA = {
-    "Clear": "https://images.unsplash.com/photo-1506452819137-0422416856b8?q=80&w=1920", # Sol limpo e suave
-    "Clouds": "https://images.unsplash.com/photo-1534088568595-a066f410bcda?q=80&w=1920", # Nuvens volumosas cinematográficas
+    "Clear": "https://plus.unsplash.com/premium_photo-1733306531071-087c077e1502?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", # Sol limpo e suave
+    "Clouds": "https://unsplash.com/pt-br/fotografias/clousd-branco-ZaCPb3xIqrg", # Nuvens volumosas cinematográficas
     "Rain": "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=1920", # Chuva estética em janela
-    "Thunderstorm": "https://images.unsplash.com/photo-1605727281914-5570a9a24d97?q=80&w=1920", # Tempestade épica
-    "Snow": "https://images.unsplash.com/photo-1478265409131-1f65c88f965c?q=80&w=1920", # Neve real HD
+    "Thunderstorm": "https://images.unsplash.com/photo-1559087867-ce4c91325525?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", # Tempestade épica
+    "Snow": "https://images.unsplash.com/photo-1477601263568-180e2c6d046e?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", # Neve real HD
     "Mist": "https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227?q=80&w=1920", # Neblina limpa
     "Fog": "https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227?q=80&w=1920",
-    "Default": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1920"
+    "Default": "https://images.unsplash.com/photo-1778483154534-8290a142eb2d?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 }
 
 def aplicar_estilo(url_foto):
