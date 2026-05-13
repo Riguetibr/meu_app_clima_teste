@@ -32,6 +32,7 @@ def aplicar_estilo(url_foto):
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            transition: background 1s ease-in-out; /* Transição suave na troca de foto */
         }}
         .caixa-central {{
             background: rgba(255, 255, 255, 0.1); 
@@ -74,7 +75,8 @@ col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     cidade = st.text_input("Pesquise uma cidade", label_visibility="collapsed", placeholder="🔍 Digite a cidade e tecle Enter...")
 
-url_padrao = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
+# Imagem padrão inicial
+url_exibicao = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
 
 if cidade:
     params = {"q": cidade, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
@@ -86,21 +88,38 @@ if cidade:
             nome = dados['name']
             temp = dados['main']['temp']
             condicao = dados['weather'][0]['description']
-            clima_main = dados['weather'][0]['main']
+            clima_main = dados['weather'][0]['main'] # Ex: 'Clear', 'Rain'
             nuvens = dados.get('clouds', {}).get('all', 0)
             humidade = dados['main']['humidity']
             
-            url_atual = f"https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&q=80&w=1920&keywords={clima_main}"
-            aplicar_estilo(url_atual)
+            # --- LÓGICA DE IMAGEM DINÂMICA CORRIGIDA ---
+            # Criamos uma busca específica: clima + nome da cidade para ser mais preciso
+            busca_termo = f"{clima_main},{nome},weather"
+            url_exibicao = f"https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&q=80&w=1920&sig={cidade.replace(' ', '')}&keywords={busca_termo}"
+            
+            # Se for ensolarado, tentamos uma foto de sol, se chover, de chuva, etc.
+            mapeamento_fotos = {
+                "Clear": "sunny,sky",
+                "Clouds": "cloudy,overcast",
+                "Rain": "rain,wet",
+                "Drizzle": "drizzle",
+                "Thunderstorm": "storm,lightning",
+                "Snow": "snow,winter",
+                "Mist": "fog,mist",
+                "Fog": "fog"
+            }
+            termo_clima = mapeamento_fotos.get(clima_main, "weather")
+            url_exibicao = f"https://loremflickr.com/1920/1080/{termo_clima},{nome.replace(' ', '')}/all"
+
+            aplicar_estilo(url_exibicao)
             emoji = obter_emoji(clima_main)
             
             dicas = []
-            if temp < 15: dicas.append("🧥 Agasalhe-se")
-            elif 15 <= temp <= 25: dicas.append("🌤️ Clima agradável")
-            else: dicas.append("🥵 Hidrate-se")
-            if "Rain" in clima_main: dicas.append("☔ Leve guarda-chuva")
+            if temp < 15: dicas.append("Agasalhe-se")
+            elif 15 <= temp <= 25: dicas.append("Clima agradável")
+            else: dicas.append("Hidrate-se")
+            if "Rain" in clima_main: dicas.append("Leve guarda-chuva")
 
-            # HTML concatenado em uma linha para evitar erro de interpretação do Streamlit
             html_content = f"""<div class="caixa-central">
 <p style="font-size: 22px; opacity: 0.9; margin-bottom: 0;">{nome}</p>
 <h1 style="font-size: 110px; margin: 0; line-height: 1;">{int(temp)}°C</h1>
@@ -112,11 +131,11 @@ if cidade:
 </div></div>"""
             st.markdown(html_content, unsafe_allow_html=True)
         else:
-            aplicar_estilo(url_padrao)
+            aplicar_estilo(url_exibicao)
             st.error("Cidade não encontrada.")
     except:
-        aplicar_estilo(url_padrao)
+        aplicar_estilo(url_exibicao)
         st.error("Erro na conexão.")
 else:
-    aplicar_estilo(url_padrao)
+    aplicar_estilo(url_exibicao)
     st.markdown('<div class="caixa-central"><h2 style="font-size: 40px;">Olá! 🌍</h2><p style="font-size: 18px;">Coloque o nome da cidade acima e veja seu clima</p></div>', unsafe_allow_html=True)
