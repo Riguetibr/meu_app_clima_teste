@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import random
+from datetime import datetime
 
 # --- CONFIGURAÇÃO DA API ---
 API_KEY = "d02f718aeb19fadc0a02515451c9e180"
@@ -8,7 +9,7 @@ BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 st.set_page_config(page_title="Clima Pro", layout="wide")
 
-# --- BANCO DE CAPITAIS + RJ E SP ---
+# --- BANCO DE CIDADES ---
 CAPITAIS_SUGESTOES = [
     "Brasília", "São Paulo", "Rio de Janeiro", "Londres", "Paris", 
     "Tóquio", "Nova York", "Lisboa", "Roma", "Berlim", 
@@ -40,11 +41,11 @@ def aplicar_estilo(url_foto):
         .caixa-central {{
             background: rgba(255, 255, 255, 0.1); 
             backdrop-filter: blur(20px);
-            padding: 30px;
+            padding: 35px;
             border-radius: 25px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center;
-            max-width: 550px;
+            max-width: 600px;
             margin: auto;
         }}
         .card-sugestao {{
@@ -54,7 +55,6 @@ def aplicar_estilo(url_foto):
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
-            height: 100%;
         }}
         h1, h2, h3, p {{ color: white !important; font-family: 'sans-serif'; }}
         .metric-container {{
@@ -65,13 +65,10 @@ def aplicar_estilo(url_foto):
             padding: 15px;
             border-radius: 15px;
         }}
-        /* Estilo para o botão de voltar */
-        .stButton>button {{
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            color: white !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            border-radius: 10px !important;
-            backdrop-filter: blur(10px);
+        .voltar-btn-container {{
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -84,7 +81,6 @@ def card_mini_clima(cidade_nome):
         clima_tipo = r['weather'][0]['main']
         icons = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Thunderstorm": "⛈️", "Snow": "❄️"}
         icon = icons.get(clima_tipo, "🌍")
-        
         st.markdown(f"""
             <div class="card-sugestao">
                 <p style="margin:0; font-size: 14px; opacity: 0.7;">{cidade_nome.upper()}</p>
@@ -95,34 +91,37 @@ def card_mini_clima(cidade_nome):
     except:
         pass
 
-# --- LOGICA DE NAVEGAÇÃO ---
-# Inicializa o estado da pesquisa se não existir
-if 'pesquisou' not in st.session_state:
-    st.session_state.pesquisou = False
+# --- CONTROLE DE ESTADO ---
+if 'cidade_ativa' not in st.session_state:
+    st.session_state.cidade_ativa = None
 
 st.markdown("<h1 style='text-align: center; margin-bottom: 20px;'>🌍 Monitor de Clima</h1>", unsafe_allow_html=True)
 
-# Barra de pesquisa
-c_input1, c_input2, c_input3 = st.columns([1, 2, 1])
-with c_input2:
-    cidade_input = st.text_input("", placeholder="🔍 Digite a cidade...", label_visibility="collapsed")
-    if cidade_input:
-        st.session_state.pesquisou = True
+# Barra de busca (Sempre visível ou limpa ao voltar)
+c_in1, c_in2, c_in3 = st.columns([1, 2, 1])
+with c_in2:
+    busca = st.text_input("", placeholder="🔍 Digite a cidade...", label_visibility="collapsed", key="search_input")
+    if busca:
+        st.session_state.cidade_ativa = busca
 
-# Se o usuário pesquisou algo
-if st.session_state.pesquisou and cidade_input:
-    params = {"q": cidade_input, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
+# --- LÓGICA DE EXIBIÇÃO ---
+if st.session_state.cidade_ativa:
+    params = {"q": st.session_state.cidade_ativa, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
     try:
         res = requests.get(BASE_URL, params=params).json()
         if res.get("cod") == 200:
             clima = res['weather'][0]['main']
-            temp = res['main']['temp']
+            temp = int(res['main']['temp'])
             desc = res['weather'][0]['description']
             humidade = res['main']['humidity']
             nuvens = res['clouds']['all']
             
-            aplicar_estilo(FOTOS_CLIMA.get(clima, FOTOS_CLIMA["Default"]))
+            # Data e Hora Atual
+            agora = datetime.now()
+            data_formatada = agora.strftime("%d/%m/%Y")
+            hora_formatada = agora.strftime("%H:%M")
             
+            aplicar_estilo(FOTOS_CLIMA.get(clima, FOTOS_CLIMA["Default"]))
             icones = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Thunderstorm": "⛈️", "Snow": "❄️"}
             icon = icones.get(clima, "🌍")
             dica = "Hidrate-se 💧" if temp > 25 else "Agasalhe-se 🧥" if temp < 15 else "Clima agradável 😎"
@@ -130,8 +129,14 @@ if st.session_state.pesquisou and cidade_input:
             st.markdown(f"""
                 <div class="caixa-central">
                     <p style="font-size: 18px; opacity: 0.8; margin: 0;">{res['name']}</p>
-                    <h1 style="font-size: 85px; margin: 0;">{int(temp)}°C</h1>
-                    <h2 style="margin: 5px 0 20px 0;">{icon} {desc.title()}</h2>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                        <h1 style="font-size: 90px; margin: 0;">{temp}°C</h1>
+                        <div style="text-align: left; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 15px;">
+                            <p style="margin:0; font-size: 16px; font-weight: bold;">{data_formatada}</p>
+                            <p style="margin:0; font-size: 24px; letter-spacing: 1px;">{hora_formatada}</p>
+                        </div>
+                    </div>
+                    <h2 style="margin: 10px 0 20px 0;">{icon} {desc.title()}</h2>
                     <div class="metric-container">
                         <div style="flex:1;">
                             <p style="margin:0; font-size: 12px; opacity: 0.7;">☁️ Nuvens</p>
@@ -149,23 +154,22 @@ if st.session_state.pesquisou and cidade_input:
                 </div>
             """, unsafe_allow_html=True)
             
-            # Botão de Voltar
-            st.write("")
-            col_voltar1, col_voltar2, col_voltar3 = st.columns([1, 0.5, 1])
-            with col_voltar2:
-                if st.button("⬅️ Voltar"):
-                    st.session_state.pesquisou = False
+            # Botão Centralizado
+            st.write("") # Espaçador
+            col_b1, col_b2, col_b3 = st.columns([1, 0.4, 1])
+            with col_b2:
+                if st.button("⬅️ Voltar", use_container_width=True):
+                    st.session_state.cidade_ativa = None
                     st.rerun()
         else:
             st.error("Cidade não encontrada.")
-            if st.button("Tentar novamente"):
-                st.session_state.pesquisou = False
+            if st.button("Voltar ao Início"):
+                st.session_state.cidade_ativa = None
                 st.rerun()
     except:
         st.error("Erro na conexão.")
-
-# Tela Inicial
 else:
+    # TELA INICIAL
     aplicar_estilo(FOTOS_CLIMA["Default"])
     st.markdown("""
         <div class="caixa-central" style="margin-bottom: 50px;">
@@ -174,14 +178,10 @@ else:
         </div>
     """, unsafe_allow_html=True)
     
-    # Sorteia 3 cidades aleatórias do banco de 20
+    # Sorteio Aleatório
     cidades_sorteadas = random.sample(CAPITAIS_SUGESTOES, 3)
-    
     st.markdown("<h3 style='text-align: center; margin-bottom: 20px; font-size: 18px;'>Destaques do Momento 🌍</h3>", unsafe_allow_html=True)
     col_s1, col_s2, col_s3 = st.columns(3)
-    with col_s1:
-        card_mini_clima(cidades_sorteadas[0])
-    with col_s2:
-        card_mini_clima(cidades_sorteadas[1])
-    with col_s3:
-        card_mini_clima(cidades_sorteadas[2])
+    with col_s1: card_mini_clima(cidades_sorteadas[0])
+    with col_s2: card_mini_clima(cidades_sorteadas[1])
+    with col_s3: card_mini_clima(cidades_sorteadas[2])
