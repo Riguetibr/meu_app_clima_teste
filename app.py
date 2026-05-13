@@ -6,7 +6,7 @@ API_KEY = "d02f718aeb19fadc0a02515451c9e180"
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Clima Pro", layout="wide")
+st.set_page_config(page_title="Clima Pro Ultra", layout="wide")
 
 # Função para definir o Emoji baseado no clima
 def obter_emoji(clima_main):
@@ -22,58 +22,76 @@ def obter_emoji(clima_main):
     }
     return mapeamento.get(clima_main, "🌍")
 
-# Função de Estilo (CSS Avançado com Glassmorphism)
+# Função de Estilo (CSS Corrigido para Contraste e Leitura)
 def aplicar_estilo(url_foto):
     st.markdown(
         f"""
         <style>
+        /* Fundo da aplicação com película escura para dar contraste */
         .stApp {{
-            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("{url_foto}");
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("{url_foto}");
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            transition: background 0.5s ease-in-out;
+            transition: background 0.8s ease-in-out;
         }}
+
+        /* CAIXA CENTRAL - Glassmorphism */
         .caixa-central {{
-            background: rgba(255, 255, 255, 0.15); /* Transparência para o efeito vidro */
-            backdrop-filter: blur(15px);           /* O desfoque (Glassmorphism) */
-            -webkit-backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
             padding: 40px;
             border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2); /* Bordinha sutil */
+            border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center;
             max-width: 550px;
             margin: auto;
-            margin-top: 5vh;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            color: white;
+            margin-top: 3vh;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }}
-        h1, h2, p {{
-            color: white !important;
-            text-shadow: 1px 1px 5px rgba(0,0,0,0.2);
-        }}
-        /* Estilo para o input ficar bonitinho no vidro */
+
+        /* CORREÇÃO DO INPUT: Texto preto ao digitar para legibilidade */
         .stTextInput > div > div > input {{
-            background: rgba(255, 255, 255, 0.2) !important;
+            color: #111111 !important; 
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            border-radius: 12px !important;
+            padding: 10px 15px !important;
+            font-size: 18px !important;
+        }}
+
+        /* Textos do Site */
+        h1, h2, h3, p, span {{
             color: white !important;
-            border-radius: 15px !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8) !important;
+            font-family: 'Source Sans Pro', sans-serif;
+        }}
+
+        /* Estilo para métricas rápidas */
+        .metric-container {{
+            display: flex;
+            justify-content: space-around;
+            margin-top: 25px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
         }}
         </style>
         """,
         unsafe_allow_html=True
     )
 
-# Título Principal
-st.markdown("<h1 style='text-align: center; margin-bottom: 20px;'>🌤️ Monitor de Clima Global</h1>", unsafe_allow_html=True)
+# Título invisível para acessibilidade, mas estilizado no Markdown
+st.markdown("<h1 style='text-align: center;'>🌍 Monitor de Clima Global</h1>", unsafe_allow_html=True)
 
 # Busca de cidade
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    cidade = st.text_input("", placeholder="🔍 Digite o nome da cidade e aperte Enter...")
+    cidade = st.text_input("Pesquise uma cidade", label_visibility="collapsed", placeholder="🔍 Digite a cidade e tecle Enter...")
 
-# Imagem padrão caso nada seja pesquisado
-url_dinamica = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
+# Imagem padrão (Montanha/Céu)
+url_atual = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
 
 if cidade:
     params = {
@@ -92,13 +110,15 @@ if cidade:
             temp = dados['main']['temp']
             condicao = dados['weather'][0]['description']
             clima_main = dados['weather'][0]['main']
-            chuva_prob = dados.get('clouds', {}).get('all', 0) 
+            nuvens = dados.get('clouds', {}).get('all', 0)
+            humidade = dados['main']['humidity']
             
-            # 1. Busca imagem do Unsplash baseada no clima atual
-            url_dinamica = f"https://source.unsplash.com/featured/1600x900/?weather,{clima_main},{nome}"
+            # URL Dinâmica baseada no clima e nome da cidade
+            url_atual = f"https://api.unsplash.com/search/photos?query={clima_main}+{nome}&client_id=YOUR_UNSPLASH_KEY" 
+            # Como não temos chave API Unsplash agora, usaremos o redirecionador otimizado:
+            url_atual = f"https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&q=80&w=1920&keywords={clima_main}"
             
-            aplicar_estilo(url_dinamica)
-            
+            aplicar_estilo(url_atual)
             emoji = obter_emoji(clima_main)
             
             # Lógica de Dicas
@@ -107,23 +127,27 @@ if cidade:
             elif 15 <= temp <= 25: dicas.append("🌤️ Clima agradável")
             else: dicas.append("🥵 Hidrate-se")
             
-            if "Rain" in clima_main or "Drizzle" in clima_main:
-                dicas.append("☔ Leve guarda-chuva")
+            if "Rain" in clima_main: dicas.append("☔ Leve guarda-chuva")
 
             st.markdown(
                 f"""
                 <div class="caixa-central">
-                    <p style="font-size: 20px; opacity: 0.8; margin-bottom: 0;">{nome}</p>
-                    <h1 style="font-size: 100px; margin: 0; font-weight: bold;">{int(temp)}°C</h1>
-                    <h2 style="margin-top: 0;">{emoji} {condicao.title()}</h2>
-                    <div style="display: flex; justify-content: space-around; margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 20px;">
+                    <p style="font-size: 22px; opacity: 0.9; margin-bottom: 0;">{nome}</p>
+                    <h1 style="font-size: 110px; margin: 0; line-height: 1;">{int(temp)}°C</h1>
+                    <h2 style="margin-bottom: 20px;">{emoji} {condicao.title()}</h2>
+                    
+                    <div class="metric-container">
                         <div>
-                            <p style="margin:0; font-size: 14px;">Nuvens</p>
-                            <p style="margin:0; font-weight: bold;">{chuva_prob}%</p>
+                            <p style="margin:0; font-size: 14px; opacity: 0.8;">Nuvens</p>
+                            <p style="margin:0; font-size: 20px; font-weight: bold;">{nuvens}%</p>
                         </div>
                         <div>
-                            <p style="margin:0; font-size: 14px;">Dica</p>
-                            <p style="margin:0; font-weight: bold;">{" | ".join(dicas)}</p>
+                            <p style="margin:0; font-size: 14px; opacity: 0.8;">Umidade</p>
+                            <p style="margin:0; font-size: 20px; font-weight: bold;">{humidade}%</p>
+                        </div>
+                        <div>
+                            <p style="margin:0; font-size: 14px; opacity: 0.8;">Sugestão</p>
+                            <p style="margin:0; font-size: 16px; font-weight: bold;">{" | ".join(dicas)}</p>
                         </div>
                     </div>
                 </div>
@@ -131,18 +155,18 @@ if cidade:
                 unsafe_allow_html=True
             )
         else:
-            aplicar_estilo(url_dinamica)
-            st.error("Ops! Cidade não encontrada.")
-    except:
-        aplicar_estilo(url_dinamica)
-        st.error("Erro na conexão com o servidor.")
+            aplicar_estilo(url_atual)
+            st.error("Cidade não encontrada. Tente novamente!")
+    except Exception as e:
+        aplicar_estilo(url_atual)
+        st.error(f"Erro ao conectar com a API.")
 else:
-    aplicar_estilo(url_dinamica)
+    aplicar_estilo(url_atual)
     st.markdown(
         """
         <div class="caixa-central">
-            <h2>Bem-vindo! 🌍</h2>
-            <p>Descubra o clima em tempo real em qualquer lugar do mundo com visual imersivo.</p>
+            <h2 style="font-size: 40px;">Olá! 🌍</h2>
+            <p style="font-size: 18px;">Digite o nome de uma cidade acima para ver a mágica acontecer.</p>
         </div>
         """,
         unsafe_allow_html=True
