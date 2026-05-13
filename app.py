@@ -18,7 +18,8 @@ def obter_emoji(clima_main):
         "Thunderstorm": "⛈️",
         "Snow": "❄️",
         "Mist": "🌫️",
-        "Fog": "🌫️"
+        "Fog": "🌫️",
+        "Haze": "🌫️"
     }
     return mapeamento.get(clima_main, "🌍")
 
@@ -32,7 +33,7 @@ def aplicar_estilo(url_foto):
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            transition: background 1s ease-in-out; /* Transição suave na troca de foto */
+            transition: background 1.2s ease-in-out;
         }}
         .caixa-central {{
             background: rgba(255, 255, 255, 0.1); 
@@ -69,56 +70,55 @@ def aplicar_estilo(url_foto):
         unsafe_allow_html=True
     )
 
+# 1. BIBLIOTECA DE CLIMA (Imagens focadas apenas no fenômeno)
+FOTOS_POR_CLIMA = {
+    "Clear": "https://images.unsplash.com/photo-1506452819137-0422416856b8?q=80&w=1920", # Céu limpo/Sol
+    "Clouds": "https://images.unsplash.com/photo-1534088568595-a066f410bcda?q=80&w=1920", # Nublado
+    "Rain": "https://images.unsplash.com/photo-1534274988757-a28bf1f539cf?q=80&w=1920", # Chuva
+    "Drizzle": "https://images.unsplash.com/photo-1541675154750-0444c7d51e8e?q=80&w=1920", # Chuvisco
+    "Thunderstorm": "https://images.unsplash.com/photo-1605727281914-5570a9a24d97?q=80&w=1920", # Tempestade
+    "Snow": "https://images.unsplash.com/photo-1478265409131-1f65c88f965c?q=80&w=1920", # Neve
+    "Mist": "https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227?q=80&w=1920", # Névoa
+    "Fog": "https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227?q=80&w=1920", # Nevoeiro
+    "Haze": "https://images.unsplash.com/photo-1522163182402-834f871fd851?q=80&w=1920", # Névoa seca
+    "Default": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1920"
+}
+
 st.markdown("<h1 style='text-align: center;'>🌍 Monitor de Clima Global</h1>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     cidade = st.text_input("Pesquise uma cidade", label_visibility="collapsed", placeholder="🔍 Digite a cidade e tecle Enter...")
 
-# Imagem padrão inicial
-url_exibicao = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
-
-if cidade:
+# Imagem inicial (Montanha genérica)
+if not cidade:
+    aplicar_estilo(FOTOS_POR_CLIMA["Default"])
+    st.markdown('<div class="caixa-central"><h2 style="font-size: 40px;">Olá! 🌍</h2><p style="font-size: 18px;">Coloque o nome da cidade acima e veja seu clima</p></div>', unsafe_allow_html=True)
+else:
     params = {"q": cidade, "appid": API_KEY, "units": "metric", "lang": "pt_br"}
     try:
         response = requests.get(BASE_URL, params=params)
         dados = response.json()
 
         if response.status_code == 200:
+            clima_agora = dados['weather'][0]['main']
             nome = dados['name']
             temp = dados['main']['temp']
             condicao = dados['weather'][0]['description']
-            clima_main = dados['weather'][0]['main'] # Ex: 'Clear', 'Rain'
             nuvens = dados.get('clouds', {}).get('all', 0)
             humidade = dados['main']['humidity']
             
-            # --- LÓGICA DE IMAGEM DINÂMICA CORRIGIDA ---
-            # Criamos uma busca específica: clima + nome da cidade para ser mais preciso
-            busca_termo = f"{clima_main},{nome},weather"
-            url_exibicao = f"https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&q=80&w=1920&sig={cidade.replace(' ', '')}&keywords={busca_termo}"
+            # A MÁGICA ACONTECE AQUI: O fundo é escolhido APENAS pelo clima retornado
+            url_fundo = FOTOS_POR_CLIMA.get(clima_agora, FOTOS_POR_CLIMA["Default"])
             
-            # Se for ensolarado, tentamos uma foto de sol, se chover, de chuva, etc.
-            mapeamento_fotos = {
-                "Clear": "sunny,sky",
-                "Clouds": "cloudy,overcast",
-                "Rain": "rain,wet",
-                "Drizzle": "drizzle",
-                "Thunderstorm": "storm,lightning",
-                "Snow": "snow,winter",
-                "Mist": "fog,mist",
-                "Fog": "fog"
-            }
-            termo_clima = mapeamento_fotos.get(clima_main, "weather")
-            url_exibicao = f"https://loremflickr.com/1920/1080/{termo_clima},{nome.replace(' ', '')}/all"
-
-            aplicar_estilo(url_exibicao)
-            emoji = obter_emoji(clima_main)
+            aplicar_estilo(url_fundo)
+            emoji = obter_emoji(clima_agora)
             
             dicas = []
             if temp < 15: dicas.append("Agasalhe-se")
             elif 15 <= temp <= 25: dicas.append("Clima agradável")
             else: dicas.append("Hidrate-se")
-            if "Rain" in clima_main: dicas.append("Leve guarda-chuva")
+            if "Rain" in clima_agora: dicas.append("Leve guarda-chuva")
 
             html_content = f"""<div class="caixa-central">
 <p style="font-size: 22px; opacity: 0.9; margin-bottom: 0;">{nome}</p>
@@ -131,11 +131,8 @@ if cidade:
 </div></div>"""
             st.markdown(html_content, unsafe_allow_html=True)
         else:
-            aplicar_estilo(url_exibicao)
+            aplicar_estilo(FOTOS_POR_CLIMA["Default"])
             st.error("Cidade não encontrada.")
     except:
-        aplicar_estilo(url_exibicao)
+        aplicar_estilo(FOTOS_POR_CLIMA["Default"])
         st.error("Erro na conexão.")
-else:
-    aplicar_estilo(url_exibicao)
-    st.markdown('<div class="caixa-central"><h2 style="font-size: 40px;">Olá! 🌍</h2><p style="font-size: 18px;">Coloque o nome da cidade acima e veja seu clima</p></div>', unsafe_allow_html=True)
