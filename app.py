@@ -1,59 +1,29 @@
 import streamlit as st
-
 import requests
-
 import random
-
 from datetime import datetime, timedelta
-
 import pytz
-
 import folium
-
 from streamlit_folium import folium_static
-
-
-
 # --- CONFIGURAÇÃO DA API ---
 
 API_KEY = "d02f718aeb19fadc0a02515451c9e180"
-
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
-
 FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
-
-
-
 st.set_page_config(page_title="Clima Pro", layout="wide")
-
-
-
 # --- BANCO DE CIDADES ---
-
 CAPITAIS_SUGESTOES = [
-
     "Brasília", "São Paulo", "Rio de Janeiro", "Londres", "Paris", 
-
     "Tóquio", "Nova York", "Lisboa", "Roma", "Berlim", 
-
     "Madrid", "Buenos Aires", "Montevidéu", "Cairo", "Pequim", 
-
     "Moscou", "Atenas", "Washington", "Ottawa", "Sidney"
-
 ]
-
-
 
 DIAS_SEMANA = {
 
     "Monday": "Segunda-feira", "Tuesday": "Terça-feira", "Wednesday": "Quarta-feira",
-
     "Thursday": "Quinta-feira", "Friday": "Sexta-feira", "Saturday": "Sábado", "Sunday": "Domingo"
-
 }
-
-
-
 FOTOS_CLIMA = {
 
     "Clear": "https://plus.unsplash.com/premium_photo-1733306531071-087c077e1502?q=80&w=1170&auto=format&fit=crop", 
