@@ -48,7 +48,6 @@ def aplicar_estilo(url_foto):
             padding: 35px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center; margin: auto;
         }}
-        /* Centralização forçada para o iframe do mapa */
         iframe {{
             border-radius: 20px;
             display: block;
@@ -57,8 +56,9 @@ def aplicar_estilo(url_foto):
         .card-previsao {{
             background: rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1); text-align: center;
+            min-width: 120px;
         }}
-        h1, h2, h3, p {{ color: white !important; font-family: 'sans-serif'; }}
+        h1, h2, h3, h4, p {{ color: white !important; font-family: 'Roboto', sans-serif; }}
         .font-hora {{ font-family: 'JetBrains Mono', monospace; font-size: 28px; }}
         .font-data {{ font-family: 'Roboto', sans-serif; font-weight: 300; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; }}
         
@@ -89,7 +89,7 @@ st.markdown("<h1 style='text-align: center; margin-bottom: 20px;'>🌍 Monitor d
 col_menu1, col_menu2, col_menu3 = st.columns([1, 2, 1])
 with col_menu2:
     aba_selecionada = st.radio("Escolha a visualização:", ["Dados do Clima", "Mapa de Radar"], horizontal=True, label_visibility="collapsed")
-    busca = st.text_input("", placeholder="🔍 Digite a cidade...", label_visibility="collapsed", key=f"input_{st.session_state.cidade_ativa}")
+    busca = st.text_input("", placeholder="🔍 Digite a cidade...", label_visibility="collapsed", key="input_busca")
     if busca: st.session_state.cidade_ativa = busca
 
 if st.session_state.cidade_ativa:
@@ -106,6 +106,7 @@ if st.session_state.cidade_ativa:
 
             if aba_selecionada == "Dados do Clima":
                 # --- TELA DE DADOS ---
+                # Abertura do card principal
                 st.markdown(f"""
                     <div class="caixa-central" style="max-width: 750px;">
                         <p style="font-size: 18px; opacity: 0.7; margin-bottom: 10px;">{res['name']}, {res['sys']['country']}</p>
@@ -123,36 +124,44 @@ if st.session_state.cidade_ativa:
                             <div style="border-left:1px solid rgba(255,255,255,0.2); border-right:1px solid rgba(255,255,255,0.2); padding: 0 20px;"><p style="font-size:12px; opacity:0.7; margin:0;">💧 Umidade</p><p style="font-size:20px; font-weight:bold; margin:0;">{res['main']['humidity']}%</p></div>
                             <div><p style="font-size:12px; opacity:0.7; margin:0;">🌬️ Vento</p><p style="font-size:20px; font-weight:bold; margin:0;">{int(res['wind']['speed']*3.6)}km/h</p></div>
                         </div>
-                        <h4 style="text-align: left; margin-bottom: 15px; opacity: 0.8;">Previsão para os próximos dias</h4>
+                        
+                        <!-- TÍTULO ALTERADO: CENTRALIZADO, BRANCO E FONTE ROBOTO -->
+                        <h4 style="text-align: center; color: white !important; margin-bottom: 20px; font-weight: 300; letter-spacing: 1px;">
+                            Previsão para os próximos dias
+                        </h4>
+                        
+                        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
                 """, unsafe_allow_html=True)
 
+                # Busca de previsão
                 f_res = requests.get(FORECAST_URL, params={"q": st.session_state.cidade_ativa, "appid": API_KEY, "units": "metric", "lang": "pt_br"}).json()
-                c1, c2, c3 = st.columns(3)
+                
+                # Gerando os cards de previsão via HTML para manter o alinhamento
                 for i, idx in enumerate([8, 16, 24]):
                     f_item = f_res['list'][idx]
                     f_data = (hora_local + timedelta(days=i+1)).strftime("%d/%m")
-                    with [c1, c2, c3][i]:
-                        st.markdown(f"""<div class="card-previsao">
+                    st.markdown(f"""
+                        <div class="card-previsao">
                             <p style="margin:0; font-size:13px; font-weight:bold; opacity:0.7;">{f_data}</p>
                             <h3 style="margin:10px 0;">{int(f_item['main']['temp'])}°C</h3>
                             <p style="margin:0; font-size:11px;">{f_item['weather'][0]['description'].title()}</p>
-                        </div>""", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+                        </div>
+                    """, unsafe_allow_html=True)
+                
+                # Fechamento das Divs (Container Flex e Caixa Central)
+                st.markdown("</div></div>", unsafe_allow_html=True)
 
             else:
-                # --- TELA DE MAPA EXCLUSIVO CENTRALIZADO ---
+                # --- TELA DE MAPA ---
                 col_mapa_1, col_mapa_2, col_mapa_3 = st.columns([0.1, 5, 0.1])
-                
                 with col_mapa_2:
                     st.markdown('<div class="caixa-central" style="max-width: 950px;">', unsafe_allow_html=True)
                     lat, lon = res['coord']['lat'], res['coord']['lon']
                     m = folium.Map(location=[lat, lon], zoom_start=10, tiles="cartodbpositron")
-
                     folium.raster_layers.TileLayer(
                         tiles=f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}",
                         attr="OpenWeather", name="Nuvens", overlay=True
                     ).add_to(m)
-
                     folium_static(m, width=880, height=600)
                     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -165,7 +174,8 @@ if st.session_state.cidade_ativa:
                     st.rerun()
         else:
             st.error("Cidade não encontrada.")
-    except: st.error("Erro na conexão.")
+    except Exception as e: 
+        st.error(f"Erro na conexão: {e}")
 else:
     aplicar_estilo(FOTOS_CLIMA["Default"])
     st.markdown('<div class="caixa-central" style="max-width: 750px;"><h2>Olá! 👋</h2><p>Pesquise uma cidade para ver o clima e o mapa.</p></div>', unsafe_allow_html=True)
